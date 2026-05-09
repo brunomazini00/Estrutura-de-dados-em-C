@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// constante global
+// constantes Globais
 #define MAX_LIVROS 50
 #define TAM_STRING 100
+#define MAX_EMPRESTIMOS 100 // Capacidade de empréstimos na biblioteca
 
 // Estrutura (struct)
 
@@ -14,6 +15,13 @@ struct Livro
     char autor[TAM_STRING];
     char editora[TAM_STRING];
     int edicao;
+    int disponivel; // 1 para sim, 0 para não.
+};
+
+//Struct para armazenar informações de empréstimos  
+struct Emprestimo{
+    int indicelivro; // Índice do livro emprestado
+    char nomeUsuario[TAM_STRING]; // Nome do usuário que fez o empréstimo
 };
 
 // Limpeza de Buffer
@@ -28,9 +36,22 @@ void limparBufferEntrada()
 
 int main()
 {
-    struct Livro biblioteca[MAX_LIVROS];
+    struct Livro *biblioteca;
+    struct Emprestimo *emprestimos;
+    
+    biblioteca = (struct Livro *) calloc(MAX_LIVROS, sizeof(struct Livro));
+    emprestimos = (struct Emprestimo *) malloc(MAX_EMPRESTIMOS * sizeof(struct Emprestimo));
+
+    if (biblioteca == NULL || emprestimos == NULL)
+    {
+        printf("Erro: Falha ao alocar memoria.\n");
+        return 1; // retorna 1 para indicar um erro.
+    }
+    
     int totalLivros = 0;
+    int totalEmprestimos = 0;
     int opcao;
+
 
     // Menu
 
@@ -40,6 +61,8 @@ int main()
         printf("==================BIBLIOTECA=====================\n\n");
         printf("1 - Cadastrar novo livro \n");
         printf("2 - Listar todos os livros \n");
+        printf("3 - Realizar emprestimo\n");
+        printf("4 - Listar emprestimos\n");
         printf("0 - sair \n");
         printf("Escolha a opcao desejada:");
 
@@ -71,6 +94,8 @@ int main()
                 printf("Digite o numero da edicao: ");
                 scanf("%d", &biblioteca[totalLivros].edicao);
                 limparBufferEntrada();
+
+                biblioteca[totalLivros].disponivel = 1;
 
                 totalLivros++;
 
@@ -109,6 +134,72 @@ int main()
             printf("\nPressione Enter para continuar...");
             getchar();
             break;
+
+        case 3: //Realizar emprestimo
+            printf("--Realizar emprestimo--\n\n");
+
+            if (totalEmprestimos >= MAX_EMPRESTIMOS){
+                printf("Limite de emprestimos atingido!\n");
+            }else{
+                printf("Livros disponiveis:\n");
+                int disponiveis = 0;
+                for(int i = 0; i < totalLivros; i++){
+                    if (biblioteca[i].disponivel){
+                        printf("%d - %s\n", i+1, biblioteca[i].nome);
+                        disponiveis++;
+                    }
+                }
+
+                if (disponiveis == 0){
+                    printf("Nenhum livro disponivel para emprestimo.\n");
+                }else{
+                    printf("\nDigite o numero do livro que deseja emprestar:");
+                    int numLivro;
+                    scanf("%d", &numLivro);
+                    limparBufferEntrada();
+
+                    int indice = numLivro - 1; //converter para o indice do array (0 a N-1)
+
+                    //Validação da escolha do usuário
+                    if (indice >= 0 && indice < totalLivros && biblioteca [indice].disponivel){
+                        printf("Digite o nome do usuario que esta pegando o livro:");
+                        fgets(emprestimos[totalEmprestimos].nomeUsuario, TAM_STRING,stdin);
+                        emprestimos[totalEmprestimos].nomeUsuario[strcspn(emprestimos[totalEmprestimos].nomeUsuario,"\n")];
+
+                        //Registra o emprestimo
+                        emprestimos[totalEmprestimos].indicelivro = indice;
+
+                        //Atualiza o status do livro para indisponivel.
+                        biblioteca[indice].disponivel = 0;
+
+                        totalEmprestimos++;
+                        printf("\nEmprestimo realizado com sucesso!\n");
+                    }else{
+                        printf("\nNumero de livro invalido ou livro indisponivel.\n");
+                    }
+                }
+            }
+            printf("\nPressione Enter para continuar...");
+            getchar();
+            break;
+
+        case 4: //Listar emprestimos
+            printf("---Lista de Emprestimos---\n\n");
+            if (totalEmprestimos == 0){
+                printf("Nenhum emprestimo realizado.\n");
+            }else{
+                for (int i = 0; i < totalEmprestimos; i++){
+                    printf("----------------------\n");
+                    printf("EMPRESTIMO %d\n",i + 1);
+                    printf("Livro: %s\n",biblioteca[emprestimos[i].indicelivro].nome);
+                    printf("Usuario: %s\n", emprestimos[i].nomeUsuario);
+                }
+                printf("-----------------------------\n");
+            }
+                printf("\nPressione Enter para continuar...");
+                getchar();
+                break;
+
         case 0: // Sair
             printf("\nSaindo do sistema...\n");
             break;
@@ -120,6 +211,13 @@ int main()
             break;
         }
     } while (opcao != 0);
+
+    //Liberação da memória
+
+    free(biblioteca);
+    free(emprestimos);
+
+    printf("Memoria liberada com sucesso.\n");
 
     return 0;
 }
